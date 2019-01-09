@@ -1,6 +1,7 @@
 from pyvirtualdisplay import Display
 
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
 from selenium import webdriver
 
 import os
@@ -34,16 +35,21 @@ class FlaurologicalDriver:
     def parser(self, url):
         self.driver.get(url)
         # self._specific_first_page()  # not really need
+        # counter = 1
         while True:
             btn = self.driver.find_element_by_xpath('//*[@id="FUS1808_next"]')
+            # counter += 1
             if btn.get_attribute("class").split(' ')[-1] == 'next':
                 self._specific_page()
                 btn.click()
             else:
                 self._specific_page()
                 break
+            # if counter == 3:
+            #     print(self.data)
+            #     exit()
         # self._specific_last_page()  # not really need
-        print(self.data)
+        # print(self.data)
 
     def save_pages(self, url):
         self.driver.get(url)
@@ -74,21 +80,44 @@ class FlaurologicalDriver:
         self.data.append(data)
 
     def _specific_page(self):
-        elements = self.driver.find_elements_by_xpath('//*[@id="FUS1808"]/tbody/tr')
+        table = self.driver.find_element_by_xpath('//*[@id="FUS1808"]/tbody')
+        elements = table.find_elements(By.TAG_NAME, 'tr')
         for element in elements:
-            data = {}
             try:
-                data['session-title'] = self.__xpath_text('//*[@id="FUS1808"]/tbody/tr[10]/td[3]/div[1]', element)
-                data['speakerType'] = self.__xpath_text('//*[@id="FUS1808"]/tbody/tr[10]/td[3]/div[2]/div[1]', element)
-                data['speakerDetails'] = {}
-                elem = self.__xpath_text('//*[@id="FUS1808"]/tbody/tr[10]/td[3]/div[2]/div[2]', element)
-                data['speakerDetails']['name'], data['speakerDetails']['Workplace'] = elem.split('\n')
-                self.data.append(data)
-            except:
+                self.data.append(self._gen_data(element))
+            except Exception as _er:
+                # print(_er)
                 pass
 
     def _specific_last_page(self):
         pass
+
+    def _gen_data(self, element):
+        data = {}
+        # data['session-title'] =
+        data['session-title'] = element.find_elements(By.TAG_NAME, 'td')[2].find_elements(By.TAG_NAME, 'div')[0].text
+        data['speakerType'] = element.find_elements(
+            By.TAG_NAME, 'td'
+        )[2].find_elements(By.TAG_NAME, 'div')[1].find_elements(By.TAG_NAME, 'div')[0].text
+        data['speakerDetails'] = {}
+        elem = element.find_elements(
+            By.TAG_NAME, 'td'
+        )[2].find_elements(By.TAG_NAME, 'div')[1].find_elements(By.TAG_NAME, 'div')[1].text
+        elem = elem.split('\n')
+        if len(elem) > 2:
+            names = []
+            workplaces = []
+            elem = list(filter(lambda x: x, elem))
+            for i in range(len(elem)):
+                print(elem)
+                if i % 2 == 0:
+                    names.append(elem[i])
+                else:
+                    workplaces.append(elem[i])
+            data['speakerDetails']['names'], data['speakerDetails']['Workplaces'] = names, workplaces
+        else:
+            data['speakerDetails']['names'], data['speakerDetails']['Workplaces'] = [elem[0]], [elem[-1]]
+        return data
 
     # PRIVATE
     def __xpath_text(self, xpath, elem=None):
