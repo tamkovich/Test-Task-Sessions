@@ -51,6 +51,10 @@ class FlaurologicalDataStructure:
         new_data['Title'] = kwargs['title']
 
         new_data['Position'] = d['speakerType'].strip(':').strip('s')  # Example: 'Speakers:'
+        if new_data['Position'].lower() == 'debater':
+            new_data['Position'] = 'Panelist'
+        if new_data['Position'].lower() == 'guest speaker':
+            new_data['Position'] = 'Speaker'
         name = d['speakerDetails']['names'][kwargs['speaker_index']]
         name = name[:name.find(',')].split(' ')
         new_data['First Name'] = name[0]
@@ -63,4 +67,6 @@ class FlaurologicalDataStructure:
         return new_data
 
     def _data_to_dataframe(self):
-        self.df = pd.DataFrame(self.data)
+        self.df = pd.DataFrame(self.data, columns=[
+            'Session Title', 'Title', 'Position', 'First Name', 'Middle Name', 'Last Name', 'Workplace'
+        ])
